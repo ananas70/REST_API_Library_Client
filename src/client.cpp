@@ -31,6 +31,19 @@ bool is_number(const string& str) {
     return !str.empty() && all_of(str.begin(), str.end(), ::isdigit);
 }
 
+bool contains_space(const string& str) {
+    for (char ch : str) {
+        if (isspace(ch)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool void_bookfields(string title,string author, string genre, string page_count, string publisher) {
+    return (title.empty() || author.empty() || genre.empty() || page_count.empty() || publisher.empty());
+}
+
 
 int main() {
     setvbuf (stdout, NULL, _IONBF, 0);
@@ -41,6 +54,7 @@ int main() {
     bool logged_in = false;
 
     string input;
+
     // Clientul e activ cât timp nu primește exit
     while(1) {
         server_sock = open_connection(SERVER_ADDR, SERVER_PORT, AF_INET, SOCK_STREAM, 0);
@@ -48,7 +62,9 @@ int main() {
         getline(cin, input);
 
         if(input == "register") {
-            if (!user_cookies.empty()) {
+
+            if (logged_in) {
+
                 // Clientul e deja logat
                 cout << "EROARE: Clientul este deja conectat" << endl;
                 continue;
@@ -59,6 +75,11 @@ int main() {
             getline(cin, username);
             cout << "password=";
             getline(cin, password);
+
+            if(contains_space(username) || contains_space(password)) {
+                cout << "EROARE: username si parola nu pot contine spatii" << endl;
+                continue;
+            }
 
             json user_data = {
                 {"username", username},
@@ -85,7 +106,8 @@ int main() {
 
         else if (input == "login") {
 
-            if (!user_cookies.empty()) {
+            if (logged_in) {
+
                 // Clientul e deja logat
                 cout << "EROARE: Clientul este deja conectat" << endl;
                 continue;
@@ -121,6 +143,7 @@ int main() {
             else {
                 cout << "Utilizatorul a fost logat cu succes" << endl;
 
+                // Salvăm cookie-urile
                 string cookie_key = "Set-Cookie: ";
                 size_t start_pos = response.find(cookie_key);
 
@@ -156,7 +179,8 @@ int main() {
             }
             else {
                 cout << "Success: Utilizatorul are acces la biblioteca" << endl;
-                // formăm token-ul JWT
+
+                // Formăm token-ul JWT
                 user_token.clear();
                 user_token += "Authorization: Bearer ";
                 string token_key = "token";
@@ -164,6 +188,7 @@ int main() {
                 start_pos += token_key.length() + 3; // +3 pentru a sări peste "token" și primele două caractere după el
                 size_t end_pos = response.find("\"", start_pos);
 
+                // Salvăm token-ul JWT pentru mai târziu (îl vom folosi pentru a dovedi că clientul are acces la bibliotecă)
                 user_token = response.substr(start_pos, end_pos - start_pos);
             }
         }
@@ -190,7 +215,7 @@ int main() {
             }
 
             else {
-                cout << response <<endl;
+                cout << "SUCCESS: \n" << response <<endl;
             }
         }
 
@@ -228,7 +253,7 @@ int main() {
             }
 
             else {
-                cout << response << endl;
+                cout << "SUCCES: \n" << response << endl;
             }
         }
 
@@ -249,6 +274,13 @@ int main() {
             getline(cin, page_count);
             cout << "publisher=";  
             getline(cin, publisher);
+
+            // Verificam integritatea campurilor introduse
+
+            if(void_bookfields(title, author, genre, page_count, publisher)) {
+                cout << "EROARE: Camp invalid pentru carte" << endl;
+                continue;
+            }
 
             if(!is_number(page_count)) {
                 cout << "EROARE: Tip de date incorect pentru numarul de pagini";
@@ -300,6 +332,7 @@ int main() {
             cout << "id="; 
             getline(cin, id);
             
+            // Verificam integritatea id-ului
             if(!is_number(id)) {
                 cout << "EROARE: ID invalid" << endl;
                 continue;
@@ -310,7 +343,7 @@ int main() {
 
             char* cookies[1];
             cookies[0] = (char*) user_cookies.c_str();
-            string message = compute_get_request_auth(SERVER_ADDR, URL_BOOKS, NULL, cookies, 1, (char*) user_token.c_str());
+            string message = compute_delete_request_auth(SERVER_ADDR, (char *) url_book.c_str(), NULL, cookies, 1, (char*) user_token.c_str());
 
 
             send_to_server(server_sock, (char *)message.c_str());
@@ -318,7 +351,6 @@ int main() {
             string response = receive_from_server(server_sock);
 
             // Verificăm ce mesaj am primit
-
             if(response.find("error") != string::npos) {
                 cout << "EROARE: cerere respinsă pentru delete_book" << endl;
                 user_cookies.clear();
@@ -346,25 +378,28 @@ int main() {
 
             if(response.find("error") != string::npos) {
                 cout << "EROARE: cerere respinsă pentru logout" << endl;
-                user_cookies.clear();
             }
 
             else {
-                cout << "Utilizatorul s-a delogat cu succes!" << endl;
+                cout << "Utilizatorul s-a delogat cu success!" << endl;
             }
 
+            // Ștergem datele de conectare
+            logged_in = false;
+            user_cookies.clear();
             user_token.clear();
 
         }
 
         else if (input == "exit") {
-            cout << "Inchidere program" << endl;
+            logged_in = false;
             close_connection(server_sock);
             break;
         }
 
         else {
             cout << "EROARE: comandă necunoscută" << endl;
+            continue;
         }
     }
 

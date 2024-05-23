@@ -19,4 +19,8 @@ char *compute_post_request_auth(char *host, char *url, char* content_type,
                             char **body_data, int body_data_fields_count,
                             char **cookies, int cookies_count, char *auth_token);
 
+char *compute_delete_request_auth(char *host, char *url, char *query_params,
+                            char **cookies, int cookies_count,
+                            char *auth_token);
+
 #endif
