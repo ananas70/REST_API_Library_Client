@@ -1,36 +1,35 @@
-# Tema 4 - Client web. Comunicaţie cu REST API.
-### Autoare: Stoica Ana-Florina, grupa 325 CB
+# Web Client. Communication with REST API
 
-## **Descriere** 
-Acest proiect reprezintă o aplicație simplă de gestionare a unei biblioteci, cu funcționalități de înregistrare, autentificare, acces la bibliotecă, adăugare și ștergere de cărți. Scopul temei este de a scrie un client HTTP în C/C++ care să interacţioneze cu un REST API.
+## **Description**
+This project represents a simple library management application, featuring functionalities for registration, authentication, library access, and adding and deleting books. The goal of the assignment is to write an HTTP client in C/C++ that interacts with a REST API.
 
-Pentru a rezolva tema, am implementat un client funcțional în C++ care acceptă comenzi de la tastatură (stdin) şi trimite, în funcţie de comandă, cereri către server. Scopul lui este de a funcţiona ca o interfaţă în linia de comandă (CLI) cu biblioteca virtuală.
+To accomplish this assignment, I implemented a functional client in C++ that accepts commands from the keyboard (stdin) and sends requests to the server based on the commands. Its purpose is to function as a command-line interface (CLI) for the virtual library.
 
-## **Implementare**
-Codul este scris în limbajul C++ și utilizează biblioteca standard și alte biblioteci pentru gestionarea conexiunilor de rețea și a cererilor HTTP. Am corelat fișierul sursă cu bibliotecile `helpers.h`, `buffers.h`, `requests.h` și `nlohmann/json.hpp` (pentru parsarea datelor JSON). 
+## **Implementation**
+The code is written in C++ and utilizes the standard library along with other libraries for managing network connections and HTTP requests. I correlated the source file with the libraries `helpers.h`, `buffers.h`, `requests.h`, and `nlohmann/json.hpp` (for parsing JSON data).
 
-Am optat pentru biblioteca `nlohmann` deoarece este compatibilă cu C++ și ușor de folosit. Astfel, am preferat să manipulez JSON într-un mod simplu, întrucât transformarea datelor în format JSON și invers se face într-un mod simplu.
+I opted for the `nlohmann` library as it is compatible with C++ and easy to use. This allows me to manipulate JSON in a straightforward manner, as transforming data to and from JSON format is simple.
 
-Pentru început, am folosit funcțiile implementate în cadrul laboratorului 09 (`helpers.c`, `requests.c`, `buffers.c`), iar în `requests.h` am adăugat încă 3 funcții:
-> * 2 variații ale funcțiilor `compute_post_request` și `compute_get_request`, și anume `compute_post_request_auth` și `compute_get_request_auth` care includ și logica necesară parsării token-ului JWT. 
-> * Funcția `compute_delete_request_auth` care oferă funcționalitatea necesară pentru ștergerea unei cărți din bibliotecă.
+Initially, I used the functions implemented in lab 09 (`helpers.c`, `requests.c`, `buffers.c`), and in `requests.h`, I added three additional functions:
+> * Two variations of the functions `compute_post_request` and `compute_get_request`, namely `compute_post_request_auth` and `compute_get_request_auth`, which include the logic needed for parsing the JWT token.
+> * The function `compute_delete_request_auth`, which provides the necessary functionality for deleting a book from the library.
 
-Am implementat următoarele comenzi:
+I implemented the following commands:
 
-- **REGISTER**: Se verifică faptul ca utilizatorul nu este deja conectat cu credențialele date și se trimit datele către server. Se parsează răspunsul primit de la server.
+- **REGISTER**: It checks if the user is already logged in with the provided credentials and sends the data to the server. The response from the server is parsed.
 
-- **LOGIN**: Se verifică faptul ca utilizatorul nu este deja conectat. După aceea, se formează un obiect JSON cu datele utilizatorului, se adaugă în conținutul trimis către server (`body_data`) și se trimite conținutul către server. Se parsează răspunsul primit de la server și se salvează cookie-urile aferente utilizatorului.
+- **LOGIN**: It checks if the user is already logged in. Then, a JSON object is formed with the user's data, added to the content sent to the server (`body_data`), and the content is sent to the server. The response from the server is parsed, and the corresponding cookies are saved for the user.
 
-- **ENTER_LIBRARY**: După verificarea autentificării, se poate accesa biblioteca. Se formează și se salvează, în același timp, token-ul JWT al utilizatorului sesiunii curente. Acest token va fi folosit ulterior, când va trebui să dovedim că utilizatorul are acces la bibliotecă.
+- **ENTER_LIBRARY**: After authentication verification, the library can be accessed. The JWT token of the current session user is formed and saved at the same time. This token will be used later when proving that the user has access to the library.
 
-- **GET_BOOKS**: Se verifică accesul la bibliotecă și se accesează biblioteca, urmând a se afișa toate cărțile disponibile în format JSON.
+- **GET_BOOKS**: It verifies access to the library and accesses the library, displaying all available books in JSON format.
 
-- **GET_BOOK**: Pentru a vizualiza detalii despre o anumită carte, se parsează de la tastatură id-ul dorit, se formează ruta de acces către carte și se trimite cererea potrivită către server. Se afișează răspunsul primit de la server în format JSON.
+- **GET_BOOK**: To view details about a specific book, the desired ID is parsed from the keyboard, the access route to the book is formed, and the appropriate request is sent to the server. The response from the server is displayed in JSON format.
 
-- **ADD_BOOK**: Se verifică datele introduse de utilizator (să nu fi introdus câmpuri vide sau un Page Count invalid) și formează câmpul JSON corespunzător noii cărți. Se trimite un POST Request către server și, în cazul adăugării cu succes, se afișează un mesaj de succes.
+- **ADD_BOOK**: It checks the data entered by the user (to ensure no empty fields or invalid Page Count were entered) and forms the corresponding JSON field for the new book. A POST request is sent to the server, and in the case of a successful addition, a success message is displayed.
 
-- **DELETE_BOOK**: Se verifică accesul la bibliotecă și integritatea id-ului cărții vizate și se trimite un GET Request către server. Se afișează un mesaj corespunzător în caz de succes.
+- **DELETE_BOOK**: It checks access to the library and the integrity of the targeted book ID and sends a GET request to the server. A corresponding message is displayed in case of success.
 
-- **LOGOUT**: curpinde logica de deconectare a utilizatorului din sesiunea curentă. Se verifică faptul că utilizatorul este conectat și se trimite către server un GET Request. Se golesc câmpurile `user_cookies` și `user_token` ce conțin cookie-urile și token-ul JWT ale utilizatorului și se setează flag-ul `logged_in` ca fals.
+- **LOGOUT**: This includes the logic for logging the user out of the current session. It checks if the user is logged in and sends a GET request to the server. The `user_cookies` and `user_token` fields, which contain the cookies and JWT token of the user, are cleared, and the `logged_in` flag is set to false.
 
-- **EXIT**: Se închide conexiunea cu server-ul (prin închiderea socket-ului `server_sock`) și se iese din bucla infinită.
+- **EXIT**: It closes the connection to the server (by closing the `server_sock` socket) and exits the infinite loop.
